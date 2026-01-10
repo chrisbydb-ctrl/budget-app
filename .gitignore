@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+.venv/
+
+# Streamlit / local artifacts
+budget.db
+*.db
+.streamlit/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
