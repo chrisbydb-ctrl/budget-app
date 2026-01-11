@@ -308,6 +308,16 @@ def set_bill_paid(
         )
 
 
+def update_bill_amount_and_recurring(bill_id: str, planned_amount: float, recurring: bool):
+    """Update bill planned amount and recurring status."""
+    conn = get_db()
+    conn.execute(
+        "UPDATE bills SET planned = ?, recurring = ? WHERE id = ?",
+        (planned_amount, 1 if recurring else 0, bill_id),
+    )
+    conn.commit()
+
+
 # ---------------- Accounts ----------------
 def add_account(
     owner_id: str,

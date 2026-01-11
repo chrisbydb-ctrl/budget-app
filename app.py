@@ -115,7 +115,7 @@ def download_db_button():
                 data=f.read(),
                 file_name="budget.db",
                 mime="application/octet-stream",
-                use_container_width=True,
+                width='stretch',
             )
     else:
         st.info("Database file not found yet. Add some data first.")
@@ -250,7 +250,6 @@ with tabs[1]:
     else:
         st.info("Add bills to see bill metrics.")
 
-    # Planned vs Actual totals
     try:
         pva = df_from_rows(services.planned_vs_actual(m))
     except Exception:
@@ -258,12 +257,12 @@ with tabs[1]:
 
     if not pva.empty:
         st.markdown("### Planned vs Actual")
-        st.dataframe(pva, use_container_width=True)
+        st.dataframe(pva, width='stretch')
 
         totals = safe_owner_totals_from_pva(pva)
         if totals is not None:
             st.markdown("### Owner totals")
-            st.dataframe(totals, use_container_width=True)
+            st.dataframe(totals, width='stretch')
 
             grand = totals[["planned", "actual", "variance"]].sum()
             c4, c5, c6 = st.columns(3)
@@ -280,12 +279,12 @@ with tabs[1]:
         st.markdown("### Debt totals (from snapshots)")
         totals = prog.dropna(subset=["curr_balance"]).groupby("type")["curr_balance"].sum().reset_index()
         totals = totals.rename(columns={"curr_balance": "total_balance"})
-        st.dataframe(totals, use_container_width=True)
+        st.dataframe(totals, width='stretch')
 
         st.markdown("### Accounts missing a snapshot this month")
         if "owner" in prog.columns and "account" in prog.columns:
             missing = prog[prog["curr_balance"].isna()][["owner", "account", "type"]]
-            st.dataframe(missing, use_container_width=True)
+            st.dataframe(missing, width='stretch')
     else:
         st.info("Add accounts + monthly snapshots to see debt overview.")
 
@@ -351,7 +350,7 @@ with tabs[3]:
     df = df_from_rows(rows)
 
     if not df.empty and "id" in df.columns:
-        st.dataframe(df.drop(columns=["id"]), use_container_width=True)
+        st.dataframe(df.drop(columns=["id"]), width='stretch')
         st.caption("Soft delete removes it from reports but keeps history.")
         del_id = st.selectbox("Select a transaction to delete", df["id"].tolist())
         if st.button("Delete selected transaction"):
@@ -359,7 +358,7 @@ with tabs[3]:
             st.success("Deleted.")
             st.rerun()
     else:
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width='stretch')
 
 # ---------------- Budgets ----------------
 with tabs[4]:
@@ -410,12 +409,12 @@ with tabs[4]:
         if pva.empty:
             st.info("No rows yet. Add categories and budgets/transactions.")
         else:
-            st.dataframe(pva, use_container_width=True)
+            st.dataframe(pva, width='stretch')
 
             totals = safe_owner_totals_from_pva(pva)
             if totals is not None:
                 st.markdown("### Owner totals")
-                st.dataframe(totals, use_container_width=True)
+                st.dataframe(totals, width='stretch')
     except Exception as e:
         st.error(str(e))
 
@@ -434,7 +433,7 @@ with tabs[5]:
         st.info("No bills yet. Add bills in Setup Wizard or Settings.")
     else:
         show_df = df.drop(columns=["bill_id"]) if "bill_id" in df.columns else df
-        st.dataframe(show_df, use_container_width=True)
+        st.dataframe(show_df, width='stretch')
 
         planned_total = float(df["planned"].fillna(0).sum()) if "planned" in df.columns else 0.0
         paid_total = 0.0
@@ -466,7 +465,7 @@ with tabs[5]:
                     note=note,
                 )
 
-            if confirm_bar_if_pending(m, "save_bill_payment", "You’re about to update bill payment status in a closed month"):
+            if confirm_bar_if_pending(m, "save_bill_payment", "You're about to update bill payment status in a closed month"):
                 do_bill_write()
                 st.success("Updated.")
                 st.rerun()
@@ -478,6 +477,20 @@ with tabs[5]:
                 do_bill_write()
                 st.success("Updated.")
                 st.rerun()
+
+            st.divider()
+            st.markdown("### Edit bill details")
+            planned_amount = float(picked.get("planned") or 0)
+            new_planned = st.number_input("Planned amount", min_value=0.0, step=1.0, value=planned_amount, key="bill_edit_amt")
+            is_recurring = st.checkbox("Recurring (shows each month)", value=(int(picked.get("recurring", 0)) == 1), key="bill_recurring")
+
+            if st.button("Update bill amount & recurring", key="bill_edit_save"):
+                try:
+                    services.update_bill_amount_and_recurring(str(picked["bill_id"]), float(new_planned), bool(is_recurring))
+                    st.success("Bill updated.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
 
 # ---------------- Accounts + Snapshots ----------------
 with tabs[6]:
@@ -552,7 +565,7 @@ with tabs[6]:
 
     st.markdown("### Snapshot history")
     snaps = df_from_rows(services.get_snapshots())
-    st.dataframe(snaps, use_container_width=True)
+    st.dataframe(snaps, width='stretch')
 
 # ---------------- Debt Progress ----------------
 with tabs[7]:
@@ -596,7 +609,7 @@ with tabs[7]:
             "credit_limit", "utilization_%", "start_balance", "payoff_%"
         ]
         existing_cols = [c for c in show_cols if c in df.columns]
-        st.dataframe(df[existing_cols], use_container_width=True)
+        st.dataframe(df[existing_cols], width='stretch')
 
 # ---------------- Monthly Closeout ----------------
 with tabs[8]:
@@ -617,7 +630,7 @@ with tabs[8]:
                 st.error(str(e))
 
     st.markdown("### Closeout history")
-    st.dataframe(df_from_rows(services.get_month_closings()), use_container_width=True)
+    st.dataframe(df_from_rows(services.get_month_closings()), width='stretch')
 
 # ---------------- Data Tools (Backup + CSV) ----------------
 with tabs[9]:
@@ -632,7 +645,7 @@ with tabs[9]:
 
     export_rows = services.export_transactions_rows(None if export_all else export_month)
     export_df = pd.DataFrame(export_rows)
-    st.dataframe(export_df, use_container_width=True)
+    st.dataframe(export_df, width='stretch')
 
     if not export_df.empty:
         csv_bytes = export_df.to_csv(index=False).encode("utf-8")
@@ -641,7 +654,7 @@ with tabs[9]:
             data=csv_bytes,
             file_name=("transactions_all.csv" if export_all else f"transactions_{export_month}.csv"),
             mime="text/csv",
-            use_container_width=True,
+            width='stretch',
         )
 
     st.divider()
@@ -686,11 +699,11 @@ with tabs[9]:
 
                 if not bad_date.empty:
                     st.error("Some txn_date values are not YYYY-MM-DD. Fix these rows and re-upload.")
-                    st.dataframe(bad_date, use_container_width=True)
+                    st.dataframe(bad_date, width='stretch')
 
                 if not bad_amt.empty:
                     st.error("Some amount values are missing or <= 0. Fix these rows and re-upload.")
-                    st.dataframe(bad_amt, use_container_width=True)
+                    st.dataframe(bad_amt, width='stretch')
 
                 if bad_date.empty and bad_amt.empty:
                     unresolved_owners = []
@@ -719,7 +732,7 @@ with tabs[9]:
                         st.info("Fix CSV owners to match your bucket names, or use shared/person_1/person_2.")
                     else:
                         st.markdown("#### Preview import")
-                        st.dataframe(pd.DataFrame(prepared_rows).drop(columns=["owner_id", "category_id"]), use_container_width=True)
+                        st.dataframe(pd.DataFrame(prepared_rows).drop(columns=["owner_id", "category_id"]), width='stretch')
 
                         closed_months = sorted([mm for mm in months_touched if services.is_month_closed(mm)])
                         if closed_months:
@@ -778,7 +791,7 @@ with tabs[10]:
 
     all_cats = services.get_categories(active_only=False)
     cdf = df_from_rows(all_cats)
-    st.dataframe(cdf, use_container_width=True)
+    st.dataframe(cdf, width='stretch')
 
     if all_cats:
         st.markdown("#### Rename / activate-deactivate category")
@@ -820,6 +833,22 @@ with tabs[10]:
             st.error(str(e))
 
     bills_all = df_from_rows(services.get_bills(active_only=False))
-    st.dataframe(bills_all, use_container_width=True)
+    st.dataframe(bills_all, width='stretch')
+
+    if not bills_all.empty and "id" in bills_all.columns:
+        st.markdown("#### Edit bill amount & recurring")
+        pick_bill = st.selectbox("Pick bill to edit", bills_all["name"].tolist(), key="edit_bill_pick")
+        bill_to_edit = bills_all[bills_all["name"] == pick_bill].iloc[0]
+
+        edit_amount = st.number_input("Planned amount", min_value=0.0, step=1.0, value=float(bill_to_edit.get("planned", 0)), key="edit_bill_amount")
+        edit_recurring = st.checkbox("Recurring (shows each month)", value=(int(bill_to_edit.get("recurring", 0)) == 1), key="edit_bill_recurring")
+
+        if st.button("Save bill changes", key="edit_bill_save"):
+            try:
+                services.update_bill_amount_and_recurring(str(bill_to_edit["id"]), float(edit_amount), bool(edit_recurring))
+                st.success("Bill updated.")
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
 
 
